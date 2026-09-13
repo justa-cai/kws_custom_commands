@@ -55,7 +55,7 @@ body {
 
 .masthead {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 4px;
@@ -72,16 +72,33 @@ body {
   font-size: 13px;
 }
 
+/*
+ * 源码链接。做成有边框的小胶囊而不是一行带下划线的文字——原来那版
+ * 13px 灰色虚线下划线在深色底上几乎看不见，用户会以为页面上没有入口。
+ */
 .masthead .repo-link {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   color: var(--text-dim);
   text-decoration: none;
-  font-size: 13px;
-  border-bottom: 1px dotted var(--border-strong);
+  font-size: 12.5px;
+  white-space: nowrap;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
 }
 
 .masthead .repo-link:hover {
   color: var(--accent);
+  border-color: var(--accent-dim);
+  background: var(--accent-soft);
+}
+
+.masthead .repo-link svg {
+  flex: none;
 }
 
 /* ---------- 卡片 ---------- */

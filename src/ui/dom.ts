@@ -88,3 +88,26 @@ export function button(label: string, onClick: () => void, attrs: ElAttrs = {}):
 export function iconButton(label: string, title: string, onClick: () => void, attrs: ElAttrs = {}): HTMLButtonElement {
   return el('button', { ...attrs, type: 'button', class: 'icon-btn', text: label, title, onClick });
 }
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/**
+ * 造一个单 path 的图标。`fill` 用 `currentColor`，所以颜色跟着文字走，
+ * hover 时不用额外写一条 CSS 规则。
+ *
+ * @param pathD 16×16 viewBox 下的 path 数据
+ */
+export function svgIcon(pathD: string, size = 16): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 16 16');
+  svg.setAttribute('width', String(size));
+  svg.setAttribute('height', String(size));
+  svg.setAttribute('fill', 'currentColor');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+
+  const path = document.createElementNS(SVG_NS, 'path');
+  path.setAttribute('d', pathD);
+  svg.appendChild(path);
+  return svg;
+}
