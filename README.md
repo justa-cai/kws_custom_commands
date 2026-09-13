@@ -133,8 +133,9 @@ src/
 
 ## 致谢与许可
 
-本项目代码：MIT（见 `LICENSE`）。
+本项目代码：**MIT**（见 `LICENSE`）。
 
-语音模型来自 [k2-fsa/sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) 的 KWS 预训练模型发布，**Apache License 2.0**，版权归上游作者所有。详见 `public/models/*/README.md`。
-
-分词正确性对照的黄金样本来自上述模型的 `keywords.txt` / `test_keywords.txt`，同样是上游产物。
+仓库里的语音模型、测试音频、黄金样本来自
+[k2-fsa/sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) 的 KWS 预训练模型发布，
+**Apache License 2.0**，版权归上游作者所有。逐项清单见 `NOTICE.md`，
+各模型目录下的 `README.md` 记录了精确的文件名对照。
