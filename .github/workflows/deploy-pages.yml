@@ -29,6 +29,11 @@ env:
 
 jobs:
   build:
+    # workflow_run 在 Build WASM 结束时就触发，不管成功失败；
+    # 失败的话产物肯定没有，再跑一遍部署只是白报一次错，直接跳过。
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
