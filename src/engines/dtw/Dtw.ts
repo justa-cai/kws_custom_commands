@@ -26,8 +26,21 @@ export interface DtwMatch {
 
 const INF = 1e30;
 
-function rowBuffers(n: number): { prev: Float32Array; curr: Float32Array } {
-  return { prev: new Float32Array(n), curr: new Float32Array(n) };
+/**
+ * 行缓冲复用。
+ *
+ * 运行时每 30ms 要对每条命令的每条模板算一次，几十条模板就是几十次调用；
+ * 每次调用都 new 两个 Float32Array 的话，光垃圾回收就够卡一下了。
+ * 这函数是同步的、调用方串行，所以共用一份 scratch 是安全的。
+ */
+let scratchPrev = new Float32Array(0);
+let scratchCurr = new Float32Array(0);
+
+function ensureScratch(n: number): void {
+  if (scratchPrev.length < n) {
+    scratchPrev = new Float32Array(n);
+    scratchCurr = new Float32Array(n);
+  }
 }
 
 /**
@@ -50,7 +63,9 @@ export function subsequenceDtw(
 
   const t = template.data;
   const c = candidate.data;
-  let { prev, curr } = rowBuffers(n);
+  ensureScratch(n);
+  let prev = scratchPrev;
+  let curr = scratchCurr;
 
   // 第一行：自由起点，所以每个 j 都可以是路径起点
   for (let j = 0; j < n; j++) {
