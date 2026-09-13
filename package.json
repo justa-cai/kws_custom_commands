@@ -1,0 +1,23 @@
+{
+  "name": "kws-custom-commands",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "纯前端语音唤醒（KWS）与自定义命令词：sherpa-onnx WASM + DTW 录音造词，无需后端",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 4173",
+    "typecheck": "tsc --noEmit",
+    "wasm:build": "./wasm/build.sh"
+  },
+  "dependencies": {
+    "pinyin-pro": "^3.29.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0"
+  }
+}

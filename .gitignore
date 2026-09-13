@@ -1,0 +1,17 @@
+# 构建产物
+node_modules/
+dist/
+
+# 临时目录：调试脚本、抓包、下载的源码快照、wasm 构建缓存
+tmp/
+
+# WASM 由 wasm/build.sh 或 CI 产出，不入库
+public/wasm/
+
+# 杂项
+*.local
+.DS_Store
+.vite/
+
+# 浏览器自动化调试留下的记录
+.playwright-cli/

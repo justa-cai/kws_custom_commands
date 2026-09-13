@@ -1,0 +1,49 @@
+diff --git a/wasm/kws/CMakeLists.txt b/wasm/kws/CMakeLists.txt
+index 031bd6d..93c27e2 100644
+--- a/wasm/kws/CMakeLists.txt
++++ b/wasm/kws/CMakeLists.txt
+@@ -2,15 +2,17 @@ if(NOT $ENV{SHERPA_ONNX_IS_USING_BUILD_WASM_SH})
+     message(FATAL_ERROR "Please use ./build-wasm-simd-kws.sh to build for wasm KWS")
+ endif()
+ 
+-if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets/decoder-epoch-12-avg-2-chunk-16-left-64.onnx")
+-    message(WARNING "${CMAKE_CURRENT_SOURCE_DIR}/assets/decoder-epoch-12-avg-2-chunk-16-left-64.onnx does not exist")
+-    message(FATAL_ERROR "Please read ${CMAKE_CURRENT_SOURCE_DIR}/assets/README.md before you continue")
+-endif()
++# NOTE: the model files are NOT preloaded into the wasm image. They are fetched
++# at runtime and written into the Emscripten MEMFS by the web app, so that one
++# wasm build can serve several models/languages without a rebuild.
++# See https://github.com/justa-cai/kws_custom_commands
+ 
+ set(exported_functions
+   SherpaOnnxCreateKeywordSpotter
+   SherpaOnnxCreateKeywordStream
++  SherpaOnnxCreateKeywordStreamWithKeywords
+   SherpaOnnxDecodeKeywordStream
++  SherpaOnnxDecodeMultipleKeywordStreams
+   SherpaOnnxDestroyKeywordResult
+   SherpaOnnxDestroyKeywordSpotter
+   SherpaOnnxDestroyOnlineStream
+@@ -30,11 +32,11 @@ endforeach()
+ list(JOIN mangled_exported_functions "," all_exported_functions)
+ 
+ include_directories(${CMAKE_SOURCE_DIR})
+-set(MY_FLAGS "-s FORCE_FILESYSTEM=1 -s INITIAL_MEMORY=512MB -s ALLOW_MEMORY_GROWTH=1")
++set(MY_FLAGS "-s FORCE_FILESYSTEM=1 -s INITIAL_MEMORY=64MB -s ALLOW_MEMORY_GROWTH=1")
+ string(APPEND MY_FLAGS " -sSTACK_SIZE=10485760 ")
+ string(APPEND MY_FLAGS " -sEXPORTED_FUNCTIONS=[_CopyHeap,_malloc,_free,${all_exported_functions}] ")
+-string(APPEND MY_FLAGS "--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/assets@. ")
+-string(APPEND MY_FLAGS " -sEXPORTED_RUNTIME_METHODS=['ccall','stringToUTF8','setValue','getValue','lengthBytesUTF8','UTF8ToString','HEAPU8','HEAP16','HEAP32','HEAPU32','HEAPF32','HEAPF64'] ")
++string(APPEND MY_FLAGS " -sMODULARIZE=1 -sEXPORT_NAME=createSherpaKws -sENVIRONMENT=web ")
++string(APPEND MY_FLAGS " -sEXPORTED_RUNTIME_METHODS=['ccall','FS','stringToUTF8','setValue','getValue','lengthBytesUTF8','UTF8ToString','HEAPU8','HEAP16','HEAP32','HEAPU32','HEAPF32','HEAPF64'] ")
+ 
+ message(STATUS "MY_FLAGS: ${MY_FLAGS}")
+ 
+@@ -53,7 +55,6 @@ install(
+         "index.html"
+         "$<TARGET_FILE_DIR:sherpa-onnx-wasm-kws-main>/sherpa-onnx-wasm-kws-main.js"
+         "$<TARGET_FILE_DIR:sherpa-onnx-wasm-kws-main>/sherpa-onnx-wasm-kws-main.wasm"
+-        "$<TARGET_FILE_DIR:sherpa-onnx-wasm-kws-main>/sherpa-onnx-wasm-kws-main.data"
+         DESTINATION
+         bin/wasm
+ )

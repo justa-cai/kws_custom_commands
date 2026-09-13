@@ -1,0 +1,82 @@
+name: Build WASM
+
+# sherpa-onnx 的 WASM 要编 20-40 分钟，跟网页代码的迭代节奏完全不同频，
+# 所以拆成独立 workflow：编一次，产物挂到 Release 上，部署那边直接下载。
+# 日常改前端不需要重编 wasm。
+#
+# 触发方式：
+#   · 手动（workflow_dispatch）——改了 wasm/build.sh 或上游版本时
+#   · 打 wasm-v* 标签
+# 产物会以固定标签 kws-wasm-latest 发布，部署 workflow 就认这个标签。
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'wasm-v*'
+
+permissions:
+  contents: write
+
+env:
+  # 改了这里记得同步改 wasm/README.md 里记录的版本
+  SHERPA_ONNX_VERSION: v1.13.8
+  EMSDK_VERSION: 4.0.23
+  RELEASE_TAG: kws-wasm-latest
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 缓存 emsdk
+        uses: actions/cache@v4
+        with:
+          path: tmp/wasm-build/emsdk
+          key: emsdk-${{ env.EMSDK_VERSION }}-${{ runner.os }}
+
+      - name: 缓存 sherpa-onnx 源码与构建目录
+        uses: actions/cache@v4
+        with:
+          path: |
+            tmp/wasm-build/sherpa-onnx
+          key: sherpa-${{ env.SHERPA_ONNX_VERSION }}-${{ runner.os }}-${{ hashFiles('wasm/kws-wasm.patch') }}
+
+      - name: 编译 WASM
+        run: bash wasm/build.sh
+
+      - name: 检查产物
+        run: |
+          ls -lh public/wasm
+          test -s public/wasm/sherpa-onnx-wasm-kws-main.wasm
+          test -s public/wasm/sherpa-onnx-wasm-kws-main.js
+
+      - name: 上传到 workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sherpa-onnx-wasm-kws
+          path: |
+            public/wasm/sherpa-onnx-wasm-kws-main.js
+            public/wasm/sherpa-onnx-wasm-kws-main.wasm
+          retention-days: 30
+
+      - name: 发布到 Release（部署 workflow 从这拿）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release delete "$RELEASE_TAG" --yes
+          fi
+          gh release create "$RELEASE_TAG" \
+            public/wasm/sherpa-onnx-wasm-kws-main.js \
+            public/wasm/sherpa-onnx-wasm-kws-main.wasm \
+            --title "sherpa-onnx WASM KWS ($SHERPA_ONNX_VERSION)" \
+            --notes "编译产物，由 .github/workflows/build-wasm.yml 自动生成。
+
+          - sherpa-onnx: \`$SHERPA_ONNX_VERSION\`
+          - emsdk: \`$EMSDK_VERSION\`
+          - **单线程构建**（无 pthread / SharedArrayBuffer），因此可以直接跑在 GitHub Pages 上。"

@@ -1,0 +1,69 @@
+name: Deploy Pages
+
+# 构建网页并部署到 GitHub Pages。
+#
+# WASM 不在这一步编译（要 20-40 分钟），而是从 Build WASM workflow 发布的
+# Release 里下载现成的产物。所以第一次部署前必须先跑一次 Build WASM，
+# 否则下面那步会明确报错告诉你去跑。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['Build WASM']
+    types: [completed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时刻只跑一个部署，新的等旧的跑完（不取消，避免 Pages 处在半发布状态）
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  WASM_RELEASE_TAG: kws-wasm-latest
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 拉取已编译好的 WASM
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p public/wasm
+          if ! gh release download "$WASM_RELEASE_TAG" --pattern 'sherpa-onnx-wasm-kws-main.*' --dir public/wasm --clobber; then
+            echo "::error::还没找到 WASM 产物（Release: $WASM_RELEASE_TAG）。请先手动跑一次 「Build WASM」 workflow。"
+            exit 1
+          fi
+          ls -lh public/wasm
+
+      - run: npm ci
+      - run: npm run build
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
