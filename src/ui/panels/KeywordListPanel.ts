@@ -90,6 +90,12 @@ export class KeywordListPanel {
         type: 'text',
         value: entry.text,
         class: 'word-text',
+        // input 事件只刷新音素预览（打字时要即时反馈），
+        // 真正改数据等 change（失焦/回车）——不然每敲一个字母都会重建 keyword stream
+        onInput: (ev: Event) => {
+          const draft: KeywordEntry = { ...entry, text: (ev.target as HTMLInputElement).value.trim() };
+          this.updatePreview(draft, preview, row);
+        },
         onChange: (ev: Event) => {
           entry.text = (ev.target as HTMLInputElement).value.trim();
           this.updatePreview(entry, preview, row);

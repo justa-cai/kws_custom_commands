@@ -95,6 +95,7 @@ export class DtwEngine {
   private candCapacity = 0;
 
   private totalFrames = 0;
+  private frameMismatchWarned = false;
   private lastCheckFrame = -1e9;
   private lastSpeechFrame = -1e9;
   private cooldownUntil = -1e9;
@@ -157,9 +158,12 @@ export class DtwEngine {
 
   /** 喂一块 16 kHz 单声道音频 */
   feed(chunk: Float32Array): void {
-    // VAD 与 MFCC 用同一套分帧参数，逐帧对齐
+    // VAD 与 MFCC 用同一套分帧参数，逐帧对齐。
+    // 万一哪天真错位了，语音标记会整体偏移，CMN 挑错帧、门控也失准——
+    // 那种 bug 从识别结果上完全看不出来，所以这里显式喊一嗓子。
     const flags: boolean[] = [];
     this.vad.process(chunk, (s) => flags.push(s));
+
     let i = 0;
     this.mfcc.process(chunk, (frame) => {
       const isSpeech = flags[i] ?? false;
@@ -167,6 +171,15 @@ export class DtwEngine {
       if (isSpeech) this.lastSpeechFrame = this.totalFrames;
       this.appendFrame(frame, isSpeech);
     });
+
+    if (i !== flags.length && !this.frameMismatchWarned) {
+      this.frameMismatchWarned = true;
+      console.warn(
+        `[dtw] VAD 帧数(${flags.length}) 与 MFCC 帧数(${i}) 对不上，语音标记会错位。` +
+          '检查两边的 frameLength / hopLength 是否一致。',
+      );
+    }
+
     this.maybeMatch();
   }
 

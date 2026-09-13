@@ -65,7 +65,12 @@ export class VoiceCommandPanel {
   private recordingMode: 'take' | 'negative' | null = null;
 
   constructor(private readonly opts: VoiceCommandPanelOptions) {
-    this.nameInput = el('input', { type: 'text', placeholder: '给这个词起个名字，例如：打开空调' });
+    this.nameInput = el('input', {
+      type: 'text',
+      placeholder: '给这个词起个名字，例如：打开空调',
+      // 名字是"什么时候能保存"的一半条件，边打边更新按钮标签
+      onInput: () => this.updateSaveButton(),
+    });
 
     this.recordBtn = button('● 录音', () => void this.toggleRecording('take'), {
       class: 'primary',
