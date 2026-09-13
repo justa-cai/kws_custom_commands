@@ -103,7 +103,12 @@ npm run dev            # http://localhost:5173/kws_custom_commands/
 - `.github/workflows/build-wasm.yml` —— 手动触发或打 `wasm-v*` 标签。编译结果发布到固定的 `kws-wasm-latest` Release。
 - `.github/workflows/deploy-pages.yml` —— push 到 `main` 时构建网页并发布到 Pages，WASM 直接从上面那个 Release 拉。
 
-**第一次部署前必须先手动跑一次 Build WASM**，否则部署任务会明确告诉你缺产物。
+**第一次部署前必须先手动跑一次 Build WASM**，否则部署任务会明确告诉你缺产物
+（Actions 历史里最早那几次红色的 Deploy Pages 就是这个原因，不是配置坏了）。
+
+顺带一提，这也是为什么 wasm 的编译和网页的构建要拆成两条 workflow：编一次
+20-40 分钟，跟改几行前端的节奏完全不是一回事。release 产物是固定的标签
+`kws-wasm-latest`，每次重编会覆盖它。
 
 ## 调参
 
